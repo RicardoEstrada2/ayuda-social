@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+<div id="app">
+    <form v-if="!authent">
+        <fieldset>
+            <legend>Username:</legend>
+            <input v-model="name"/>
+        </fieldset>
+        <fieldset>
+            <legend>Password:</legend>
+            <input v-model="pas" />
+        </fieldset>
+        <button v-on:click="checkLogin" type="button">Register</button>
+    </form>
+
+    <div v-if="authent">
+        <div>
+            <button v-on:click="logOut">Log Out</button>
+        </div>
+        <div>
+            <label>
+                username
+                <input v-model="newName" />
+            </label>
+            <label>
+                email
+                <input v-model="newPass" />
+            </label>
+            <label>
+                email
+                <input v-model="newEmail" />
+            </label>
+            <button v-on:click="addUser">add</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>username</th>
+                    <th>email</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="user in persons">
+                    <td>{{user.username}}</td>
+                    <td>{{user.email}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script type="application/javascript">
+
+    const {createApp, ref} = Vue
+
+
+    createApp({
+        setup() {
+
+            return {
+                name: ref(''),
+                pas: ref(''),
+                newName: ref(''),
+                newPass: ref(''),
+                newEmail: ref(''),
+                persons: ref([]),
+                authent: ref(false)
+            }
+        },
+        methods:{
+            async fetchUsers() {
+                const response = await fetch('/json/logins.json');
+                const users = await response.json();
+                this.persons = users;
+            },
+            async checkLogin() {
+                const username = this.name;
+                const pass = this.pas;
+                let auth = false;
+                let obj = [];
+
+                await this.fetchUsers();
+
+                // console.log(users);
+                if (Array.isArray(this.persons)){
+                    this.persons.map(user => {
+                        if (user.username === username && user.password === pass){
+                            auth = true;
+                            obj.push({name: user.username, passw: user.password});
+                        }
+                    });
+                }
+
+                if (auth){
+                    alert(JSON.stringify(obj) + ' Logged In')
+                    this.authent = true;
+                    localStorage.setItem('session', JSON.stringify(obj));
+                } else {
+                    console.log('nope')
+                }
+            },
+            logOut() {
+                localStorage.removeItem('session');
+                this.authent = false;
+            },
+            addUser(){
+                this.persons.push({"username": this.newName, "password": this.newPass, "email": this.newEmail})
+                console.log(this.persons)
+            }
+        },
+        mounted(){
+            const session = JSON.parse(localStorage.getItem('session'));
+
+            if (session){
+                this.authent = true;
+                this.name = session[0].name;
+                this.pas = session[0].passw;
+                this.fetchUsers();
+            }
+
+        }
+    }).mount('#app')
+
+</script>
+
+</body>
+</html>
